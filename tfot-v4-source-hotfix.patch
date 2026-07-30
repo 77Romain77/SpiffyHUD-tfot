@@ -1,0 +1,11 @@
+--- a/common/src/main/java/de/keksuccino/spiffyhud/mixin/mixins/common/client/MixinSpiffyGuiAdaptiveCache.java
++++ b/common/src/main/java/de/keksuccino/spiffyhud/mixin/mixins/common/client/MixinSpiffyGuiAdaptiveCache.java
+@@ -278,7 +278,7 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
+         RenderSystem.defaultBlendFunc();
+         RenderSystem.depthMask(true);
+         RenderSystem.enableDepthTest();
+-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F, 1.0F);
++        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+     }
+ 
+     @Unique
