@@ -1,0 +1,81 @@
+--- a/common/src/main/java/de/keksuccino/spiffyhud/debug/HudDebugOverlay.java
++++ b/common/src/main/java/de/keksuccino/spiffyhud/debug/HudDebugOverlay.java
+@@ -10,7 +10,9 @@
+ import org.jetbrains.annotations.NotNull;
+ import org.lwjgl.glfw.GLFW;
+ 
++import java.util.ArrayList;
+ import java.util.Arrays;
++import java.util.List;
+ import java.util.Locale;
+ 
+ /**
+@@ -51,6 +53,7 @@
+ 
+         if (toggleDown && !toggleWasDown) {
+             enabled = !enabled;
++            HudElementProfiler.setActive(enabled);
+             if (enabled) {
+                 resetMeasurements();
+             }
+@@ -68,6 +71,7 @@
+         RENDER_SAMPLES[renderSampleIndex] = elapsedMs;
+         renderSampleIndex = (renderSampleIndex + 1) % SAMPLE_COUNT;
+         renderSampleCount = Math.min(renderSampleCount + 1, SAMPLE_COUNT);
++        HudElementProfiler.recordFrame(elapsedNanos);
+ 
+         if (--rendersUntilPercentileUpdate <= 0) {
+             updateRenderPercentile();
+@@ -99,16 +103,47 @@
+         ScreenCustomizationLayer layer = SpiffyGui.INSTANCE.getCustomizationLayer();
+         int elementCount = layer == null ? 0 : layer.allElements.size();
+ 
+-        String[] lines = {
+-                "SpiffyHUD Debug",
+-                "FPS : " + minecraft.getFps(),
+-                String.format(Locale.ROOT, "Rendu HUD : %.2f ms moy.", averageRenderMs),
+-                String.format(Locale.ROOT, "Rendu P95 : %.2f ms", percentile95RenderMs),
+-                String.format(Locale.ROOT, "Tick HUD : %.2f ms moy.", averageTickMs),
+-                "Cache NBT (1 s) : " + displayedNbtHits + " hits / " + displayedNbtMisses + " calculs",
+-                "Elements du layout : " + elementCount,
+-                "Ctrl + Alt + D pour fermer"
+-        };
++        HudElementProfiler.Snapshot profile = HudElementProfiler.getSnapshot();
++        List<String> lineList = new ArrayList<>();
++        lineList.add("SpiffyHUD Debug V2");
++        lineList.add("FPS : " + minecraft.getFps());
++        lineList.add(String.format(Locale.ROOT, "Rendu HUD : %.2f ms moy.", averageRenderMs));
++        lineList.add(String.format(Locale.ROOT, "Rendu P95 : %.2f ms", percentile95RenderMs));
++        lineList.add(String.format(Locale.ROOT, "Tick HUD : %.2f ms moy.", averageTickMs));
++        lineList.add("Cache NBT (1 s) : " + displayedNbtHits + " hits / " + displayedNbtMisses + " calculs");
++        lineList.add("Elements du layout : " + elementCount);
++        lineList.add(String.format(
++                Locale.ROOT,
++                "Rendu elements : %.2f ms/image",
++                profile.getElementsMsPerFrame()
++        ));
++        lineList.add(String.format(
++                Locale.ROOT,
++                "Reste FancyMenu : %.2f ms/image",
++                profile.getOtherMsPerFrame()
++        ));
++        lineList.add("Top types (1 s) :");
++
++        if (profile.getTopTypes().isEmpty()) {
++            lineList.add("  collecte en cours...");
++        } else {
++            for (HudElementProfiler.TypeSnapshot type : profile.getTopTypes()) {
++                lineList.add(String.format(
++                        Locale.ROOT,
++                        "  %s x%d : %.2f ms",
++                        type.getName(),
++                        type.getCallsPerFrame(),
++                        type.getMsPerFrame()
++                ));
++            }
++        }
++        lineList.add("Ctrl + Alt + D pour fermer");
++        String[] lines = lineList.toArray(String[]::new);
+ 
+         int textWidth = 0;
+         for (String line : lines) {
