@@ -40,11 +40,6 @@ jobs:
           patch --batch --forward --strip=1 < tfot-debug-compile-fixes.patch
           patch --batch --forward --strip=1 < tfot-debug-v2.patch
           patch --batch --forward --strip=1 < tfot-debug-v3-title.patch
-          patch --batch --forward --strip=1 < tfot-debug-v4-cache.patch
-          patch --batch --forward --strip=1 < tfot-v4-source-hotfix.patch
-          patch --batch --forward --strip=1 < tfot-v4-runtime-mixin-fix.patch
-          patch --batch --forward --strip=1 < tfot-v4-deferred-render-fix.patch
-          patch --batch --forward --strip=1 < tfot-v4-matrix-stability-fix.patch
 
       - name: Build Forge JAR
         run: |
