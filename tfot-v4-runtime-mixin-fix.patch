@@ -1,6 +1,6 @@
 --- a/common/src/main/java/de/keksuccino/spiffyhud/mixin/mixins/common/client/MixinSpiffyGuiAdaptiveCache.java
 +++ b/common/src/main/java/de/keksuccino/spiffyhud/mixin/mixins/common/client/MixinSpiffyGuiAdaptiveCache.java
-@@ -111,7 +111,17 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
+@@ -111,7 +111,15 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
       * @reason Render the expensive FancyMenu HUD into a transparent texture at an adaptive
       * 30-60 FPS cadence, then composite that cached texture on every game frame.
       */
