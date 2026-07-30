@@ -1,6 +1,6 @@
 --- a/common/src/main/java/de/keksuccino/spiffyhud/debug/HudDebugOverlay.java
 +++ b/common/src/main/java/de/keksuccino/spiffyhud/debug/HudDebugOverlay.java
-@@ -102,11 +102,14 @@
+@@ -102,10 +102,13 @@
          Font font = minecraft.font;
          ScreenCustomizationLayer layer = SpiffyGui.INSTANCE.getCustomizationLayer();
          int elementCount = layer == null ? 0 : layer.allElements.size();
