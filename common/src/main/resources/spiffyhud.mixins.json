@@ -3,6 +3,7 @@
   "package": "de.keksuccino.spiffyhud.mixin.mixins.common",
   "compatibilityLevel": "JAVA_17",
   "client": [
+    "client.MixinAbstractElement",
     "client.IMixinGui",
     "client.IMixinPauseScreen",
     "client.IMixinSpectatorGui",
