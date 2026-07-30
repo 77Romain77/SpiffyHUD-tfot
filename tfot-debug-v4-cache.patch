@@ -1,0 +1,34 @@
+--- a/common/src/main/java/de/keksuccino/spiffyhud/debug/HudDebugOverlay.java
++++ b/common/src/main/java/de/keksuccino/spiffyhud/debug/HudDebugOverlay.java
+@@ -102,11 +102,14 @@
+         Font font = minecraft.font;
+         ScreenCustomizationLayer layer = SpiffyGui.INSTANCE.getCustomizationLayer();
+         int elementCount = layer == null ? 0 : layer.allElements.size();
++        AdaptiveHudCacheAccess adaptiveCache = SpiffyGui.INSTANCE instanceof AdaptiveHudCacheAccess access
++                ? access
++                : null;
+ 
+         HudElementProfiler.Snapshot profile = HudElementProfiler.getSnapshot();
+         List<String> lineList = new ArrayList<>();
+-        lineList.add("SpiffyHUD Debug V3");
++        lineList.add("SpiffyHUD Debug V4");
+         lineList.add("FPS : " + minecraft.getFps());
+         lineList.add(String.format(Locale.ROOT, "Rendu HUD : %.2f ms moy.", averageRenderMs));
+         lineList.add(String.format(Locale.ROOT, "Rendu P95 : %.2f ms", percentile95RenderMs));
+@@ -114,6 +117,16 @@
+         lineList.add(String.format(Locale.ROOT, "Tick HUD : %.2f ms moy.", averageTickMs));
+         lineList.add("Cache NBT (1 s) : " + displayedNbtHits + " hits / " + displayedNbtMisses + " calculs");
+         lineList.add("Elements du layout : " + elementCount);
++        if (adaptiveCache != null) {
++            lineList.add("Cache HUD : " + adaptiveCache.getTargetHudFps_Spiffy() + " FPS cible");
++            lineList.add(
++                    "HUD (1 s) : "
++                            + adaptiveCache.getCachedHudRenders_Spiffy()
++                            + " rendus / "
++                            + adaptiveCache.getCachedHudReuses_Spiffy()
++                            + " reutilises"
++            );
++        }
+         lineList.add(String.format(
+                 Locale.ROOT,
+                 "Rendu elements : %.2f ms/image",
