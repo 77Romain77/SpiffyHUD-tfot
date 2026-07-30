@@ -4,6 +4,9 @@
   "compatibilityLevel": "JAVA_17",
   "client": [
     "client.MixinAbstractElement",
+    "client.MixinImageElement",
+    "client.MixinTextElement",
+    "client.MixinTickerElement",
     "client.IMixinGui",
     "client.IMixinPauseScreen",
     "client.IMixinSpectatorGui",
