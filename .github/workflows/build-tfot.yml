@@ -35,6 +35,8 @@ jobs:
           base64 --decode tfot-optimizations.patch.gz.b64 | gzip --decompress > tfot-optimizations.patch
           patch --batch --forward --strip=1 < tfot-optimizations.patch
           patch --batch --forward --strip=1 < tfot-compile-fixes.patch
+          base64 --decode tfot-debug-overlay.patch.gz.b64 | gzip --decompress > tfot-debug-overlay.patch
+          patch --batch --forward --strip=1 < tfot-debug-overlay.patch
 
       - name: Build Forge JAR
         run: |
