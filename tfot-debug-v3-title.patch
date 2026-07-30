@@ -1,0 +1,11 @@
+--- a/common/src/main/java/de/keksuccino/spiffyhud/debug/HudDebugOverlay.java
++++ b/common/src/main/java/de/keksuccino/spiffyhud/debug/HudDebugOverlay.java
+@@ -106,7 +106,7 @@
+ 
+         HudElementProfiler.Snapshot profile = HudElementProfiler.getSnapshot();
+         List<String> lineList = new ArrayList<>();
+-        lineList.add("SpiffyHUD Debug V2");
++        lineList.add("SpiffyHUD Debug V3");
+         lineList.add("FPS : " + minecraft.getFps());
+         lineList.add(String.format(Locale.ROOT, "Rendu HUD : %.2f ms moy.", averageRenderMs));
+         lineList.add(String.format(Locale.ROOT, "Rendu P95 : %.2f ms", percentile95RenderMs));
