@@ -1,0 +1,76 @@
+--- a/common/src/main/java/de/keksuccino/spiffyhud/mixin/mixins/common/client/MixinSpiffyGuiAdaptiveCache.java
++++ b/common/src/main/java/de/keksuccino/spiffyhud/mixin/mixins/common/client/MixinSpiffyGuiAdaptiveCache.java
+@@ -138,5 +138,6 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
+         this.observeGameFrame_Spiffy(now);
+ 
+         RenderTarget mainTarget = minecraft.getMainRenderTarget();
++        Matrix4f compositePose = new Matrix4f(graphics.pose().last().pose());
+         ScreenCustomizationLayer currentLayer = SpiffyGui.INSTANCE.getCustomizationLayer();
+         if (currentLayer != this.cachedLayerIdentity_Spiffy) {
+@@ -155,7 +156,7 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
+                 this.windowHudReuses_Spiffy++;
+             }
+ 
+-            this.compositeCachedHud_Spiffy(graphics);
++            this.compositeCachedHud_Spiffy(graphics, compositePose);
+             this.updateDisplayedStats_Spiffy(now);
+ 
+             HudDebugOverlay.recordRender(System.nanoTime() - renderStartedAt);
+@@ -230,6 +231,8 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
+     ) {
+         graphics.flush();
+         this.hudCacheTarget_Spiffy.bindWrite(true);
++        RenderSystem.disableScissor();
++        RenderSystem.colorMask(true, true, true, true);
+         this.hudCacheTarget_Spiffy.clear(Minecraft.ON_OSX);
+         this.hudCacheTarget_Spiffy.bindWrite(true);
+         RenderSystem.disableScissor();
+@@ -237,12 +240,14 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
+         RenderSystem.defaultBlendFunc();
+         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+ 
++        graphics.pose().pushPose();
+         this.renderingHudCache_Spiffy = true;
+         try {
+             this.runLayerTask(() -> this.renderHudLayer_Spiffy(graphics, mouseX, mouseY, partial));
+             RenderingUtils.executeAndClearDeferredScreenRenderingTasks(graphics, mouseX, mouseY, partial);
+             graphics.flush();
+         } finally {
+             this.renderingHudCache_Spiffy = false;
++            graphics.pose().popPose();
+             mainTarget.bindWrite(true);
+             this.restoreRenderDefaults(graphics);
+         }
+@@ -264,13 +269,13 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
+     }
+ 
+     @Unique
+-    private void compositeCachedHud_Spiffy(GuiGraphics graphics) {
++    private void compositeCachedHud_Spiffy(GuiGraphics graphics, Matrix4f compositePose) {
+         graphics.flush();
+ 
+         Minecraft minecraft = Minecraft.getInstance();
+         float width = minecraft.getWindow().getGuiScaledWidth();
+         float height = minecraft.getWindow().getGuiScaledHeight();
+-        Matrix4f matrix = graphics.pose().last().pose();
+ 
+         RenderSystem.disableScissor();
++        RenderSystem.colorMask(true, true, true, true);
+         RenderSystem.disableDepthTest();
+         RenderSystem.depthMask(false);
+         RenderSystem.enableBlend();
+@@ -287,10 +292,10 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
+ 
+         BufferBuilder builder = Tesselator.getInstance().getBuilder();
+         builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+-        builder.vertex(matrix, 0.0F, height, 0.0F).uv(0.0F, 0.0F).endVertex();
+-        builder.vertex(matrix, width, height, 0.0F).uv(1.0F, 0.0F).endVertex();
+-        builder.vertex(matrix, width, 0.0F, 0.0F).uv(1.0F, 1.0F).endVertex();
+-        builder.vertex(matrix, 0.0F, 0.0F, 0.0F).uv(0.0F, 1.0F).endVertex();
++        builder.vertex(compositePose, 0.0F, height, 0.0F).uv(0.0F, 0.0F).endVertex();
++        builder.vertex(compositePose, width, height, 0.0F).uv(1.0F, 0.0F).endVertex();
++        builder.vertex(compositePose, width, 0.0F, 0.0F).uv(1.0F, 1.0F).endVertex();
++        builder.vertex(compositePose, 0.0F, 0.0F, 0.0F).uv(0.0F, 1.0F).endVertex();
+         BufferUploader.drawWithShader(builder.end());
+ 
+         RenderSystem.defaultBlendFunc();
