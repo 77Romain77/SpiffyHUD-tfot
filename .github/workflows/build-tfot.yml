@@ -35,7 +35,20 @@ jobs:
       - name: Build Forge JAR
         run: |
           chmod +x gradlew
-          ./gradlew :forge:build --stacktrace
+          if ! ./gradlew :forge:build --console=plain > gradle-build.log 2>&1; then
+            grep -n -B 4 -A 12 -E 'error:|cannot find symbol|incompatible types|Compilation failed' gradle-build.log || tail -n 200 gradle-build.log
+            exit 1
+          fi
+          cat gradle-build.log
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpiffyHUD-TFOT-build-log
+          path: gradle-build.log
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Upload Forge JAR
         uses: actions/upload-artifact@v4
