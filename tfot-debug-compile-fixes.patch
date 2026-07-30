@@ -1,0 +1,11 @@
+--- a/common/src/main/java/de/keksuccino/spiffyhud/debug/HudDebugOverlay.java
++++ b/common/src/main/java/de/keksuccino/spiffyhud/debug/HudDebugOverlay.java
+@@ -102,7 +102,7 @@
+ 
+         String[] lines = {
+                 "SpiffyHUD Debug",
+-                "FPS : " + Minecraft.getFps(),
++                "FPS : " + minecraft.getFps(),
+                 String.format(Locale.ROOT, "Rendu HUD : %.2f ms moy.", averageRenderMs),
+                 String.format(Locale.ROOT, "Rendu P95 : %.2f ms", percentile95RenderMs),
+                 String.format(Locale.ROOT, "Tick HUD : %.2f ms moy.", averageTickMs),
