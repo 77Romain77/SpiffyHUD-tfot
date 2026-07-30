@@ -25,7 +25,7 @@
          this.hudCacheTarget_Spiffy.clear(Minecraft.ON_OSX);
          this.hudCacheTarget_Spiffy.bindWrite(true);
          RenderSystem.disableScissor();
-@@ -237,12 +240,14 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
+@@ -237,13 +240,15 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
          RenderSystem.defaultBlendFunc();
          RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
  
@@ -41,7 +41,7 @@
              mainTarget.bindWrite(true);
              this.restoreRenderDefaults(graphics);
          }
-@@ -264,13 +269,13 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
+@@ -264,15 +269,15 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
      }
  
      @Unique
