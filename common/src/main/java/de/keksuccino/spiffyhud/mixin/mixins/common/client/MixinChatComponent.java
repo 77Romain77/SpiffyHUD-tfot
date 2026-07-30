@@ -2,26 +2,19 @@ package de.keksuccino.spiffyhud.mixin.mixins.common.client;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.keksuccino.spiffyhud.customization.elements.chatcustomizer.ChatCustomizerHandler;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ChatComponent;
-import net.minecraft.client.OptionInstance;
-import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.screens.ChatScreen;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(ChatComponent.class)
 public abstract class MixinChatComponent {
-
-    @Shadow @Final private Minecraft minecraft;
-
-    @Shadow private boolean isChatFocused() { return false; }
-    @Shadow public double getScale() { return 1.0; }
-    @Shadow public int getWidth() { return 0; }
 
     // Store the current fade factor for proper color fading
     @Unique private ThreadLocal<Float> currentFadeFactor_Spiffy = new ThreadLocal<>();
@@ -43,8 +36,10 @@ public abstract class MixinChatComponent {
     @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(FFF)V", ordinal = 0))
     private void modifyChatTranslation_Spiffy(PoseStack poseStack, float x, float y, float z, Operation<Void> original) {
         if (ChatCustomizerHandler.isChatRightAligned()) {
-            // For right-aligned chat, adjust x position
-            float chatWidth = (float) this.getWidth() / (float) this.getScale();
+            // For right-aligned chat, adjust x position without shadowing obfuscated methods.
+            Minecraft minecraft = Minecraft.getInstance();
+            float chatWidth = (float) ChatComponent.getWidth(minecraft.options.chatWidth().get())
+                    / minecraft.options.chatScale().get().floatValue();
             float newX = minecraft.getWindow().getGuiScaledWidth() - chatWidth - 8;
             original.call(poseStack, newX, y, z);
         } else {
@@ -58,6 +53,7 @@ public abstract class MixinChatComponent {
      */
     @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/OptionInstance;get()Ljava/lang/Object;"))
     private Object wrap_OptionGet_Spiffy(OptionInstance<?> instance, Operation<Object> original) {
+        Minecraft minecraft = Minecraft.getInstance();
         if (instance == minecraft.options.chatLineSpacing() && ChatCustomizerHandler.lineSpacing != null) {
             return ChatCustomizerHandler.lineSpacing;
         }
@@ -69,6 +65,7 @@ public abstract class MixinChatComponent {
      */
     @WrapOperation(method = "getLineHeight", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/OptionInstance;get()Ljava/lang/Object;"))
     private Object wrap_LineSpacingGet_Spiffy(OptionInstance<?> instance, Operation<Object> original) {
+        Minecraft minecraft = Minecraft.getInstance();
         if (instance == minecraft.options.chatLineSpacing() && ChatCustomizerHandler.lineSpacing != null) {
             return ChatCustomizerHandler.lineSpacing;
         }
@@ -82,8 +79,10 @@ public abstract class MixinChatComponent {
     private void customizeBackgroundFill_Spiffy(GuiGraphics graphics, int minX, int minY, int maxX, int maxY, int color, Operation<Void> original) {
         if (ChatCustomizerHandler.chatBackgroundColor != null) {
             int customColor = ChatCustomizerHandler.chatBackgroundColor.getColorInt();
-            // Apply fade effect using the captured fade factor
-            Float fadeFactor = this.isChatFocused() ? 1.0F : currentFadeFactor_Spiffy.get();
+            // Apply fade effect using the captured fade factor.
+            Float fadeFactor = Minecraft.getInstance().screen instanceof ChatScreen
+                    ? 1.0F
+                    : currentFadeFactor_Spiffy.get();
             if ((fadeFactor != null) && fadeFactor < 1.0f) {
                 // Extract the custom alpha
                 int customAlpha = (customColor >> 24) & 0xFF;
