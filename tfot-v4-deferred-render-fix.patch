@@ -1,0 +1,48 @@
+--- a/common/src/main/java/de/keksuccino/spiffyhud/mixin/mixins/common/client/MixinSpiffyGuiAdaptiveCache.java
++++ b/common/src/main/java/de/keksuccino/spiffyhud/mixin/mixins/common/client/MixinSpiffyGuiAdaptiveCache.java
+@@ -11,6 +11,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
+ import de.keksuccino.fancymenu.customization.layer.ScreenCustomizationLayer;
+ import de.keksuccino.fancymenu.events.screen.RenderScreenEvent;
+ import de.keksuccino.fancymenu.util.event.acara.EventHandler;
++import de.keksuccino.fancymenu.util.rendering.RenderingUtils;
+ import de.keksuccino.spiffyhud.customization.SpiffyGui;
+ import de.keksuccino.spiffyhud.customization.SpiffyOverlayScreen;
+ import de.keksuccino.spiffyhud.debug.AdaptiveHudCacheAccess;
+@@ -128,9 +129,11 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
+     ) {
+         if (this.hudCacheDisabled_Spiffy || !this.shouldRenderCustomizations()) return;
+ 
++        Minecraft minecraft = Minecraft.getInstance();
++        if (minecraft.level == null || minecraft.player == null || minecraft.screen != null) return;
++
+         long renderStartedAt = System.nanoTime();
+         long now = renderStartedAt;
+         this.observeGameFrame_Spiffy(now);
+ 
+-        Minecraft minecraft = Minecraft.getInstance();
+         RenderTarget mainTarget = minecraft.getMainRenderTarget();
+@@ -228,10 +231,15 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
+         graphics.flush();
+         this.hudCacheTarget_Spiffy.bindWrite(true);
+         this.hudCacheTarget_Spiffy.clear(Minecraft.ON_OSX);
+         this.hudCacheTarget_Spiffy.bindWrite(true);
++        RenderSystem.disableScissor();
++        RenderSystem.depthMask(true);
++        RenderSystem.defaultBlendFunc();
++        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+ 
+         this.renderingHudCache_Spiffy = true;
+         try {
+             this.runLayerTask(() -> this.renderHudLayer_Spiffy(graphics, mouseX, mouseY, partial));
++            RenderingUtils.executeAndClearDeferredScreenRenderingTasks();
+             graphics.flush();
+         } finally {
+@@ -260,7 +268,8 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
+         float width = minecraft.getWindow().getGuiScaledWidth();
+         float height = minecraft.getWindow().getGuiScaledHeight();
+         Matrix4f matrix = graphics.pose().last().pose();
+ 
++        RenderSystem.disableScissor();
+         RenderSystem.disableDepthTest();
+         RenderSystem.depthMask(false);
+         RenderSystem.enableBlend();
