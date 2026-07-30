@@ -5,6 +5,7 @@
   "client": [
     "client.MixinAbstractElement",
     "client.MixinImageElement",
+    "client.MixinSpiffyGuiAdaptiveCache",
     "client.MixinTextElement",
     "client.MixinTickerElement",
     "client.IMixinGui",
