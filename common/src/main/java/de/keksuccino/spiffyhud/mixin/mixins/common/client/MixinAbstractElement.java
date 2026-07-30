@@ -1,7 +1,10 @@
 package de.keksuccino.spiffyhud.mixin.mixins.common.client;
 
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import de.keksuccino.fancymenu.customization.element.AbstractElement;
 import de.keksuccino.spiffyhud.customization.SpiffyGui;
+import de.keksuccino.spiffyhud.debug.AdaptiveHudCacheAccess;
 import de.keksuccino.spiffyhud.debug.HudElementProfiler;
 import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
@@ -27,6 +30,17 @@ public abstract class MixinAbstractElement {
             float partial,
             CallbackInfo info
     ) {
+        if (SpiffyGui.INSTANCE instanceof AdaptiveHudCacheAccess cache
+                && cache.isRenderingHudCache_Spiffy()) {
+            RenderSystem.enableBlend();
+            RenderSystem.blendFuncSeparate(
+                    GlStateManager.SourceFactor.SRC_ALPHA,
+                    GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
+                    GlStateManager.SourceFactor.ONE,
+                    GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA
+            );
+        }
+
         this.spiffyHud$profileThisRender = HudElementProfiler.isActive()
                 && SpiffyGui.INSTANCE.isRenderingHudContext();
         if (this.spiffyHud$profileThisRender) {
