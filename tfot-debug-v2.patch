@@ -26,7 +26,7 @@
  
          if (--rendersUntilPercentileUpdate <= 0) {
              updateRenderPercentile();
-@@ -99,16 +103,47 @@
+@@ -99,16 +103,42 @@
          ScreenCustomizationLayer layer = SpiffyGui.INSTANCE.getCustomizationLayer();
          int elementCount = layer == null ? 0 : layer.allElements.size();
  
