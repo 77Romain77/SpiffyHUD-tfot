@@ -1,0 +1,10 @@
+--- a/common/src/main/java/de/keksuccino/spiffyhud/customization/elements/overlayremover/OverlayRemoverElement.java
++++ b/common/src/main/java/de/keksuccino/spiffyhud/customization/elements/overlayremover/OverlayRemoverElement.java
+@@ -1,6 +1,7 @@
+ package de.keksuccino.spiffyhud.customization.elements.overlayremover;
+ 
+ import com.mojang.blaze3d.systems.RenderSystem;
++import de.keksuccino.fancymenu.customization.element.AbstractElement;
+ import de.keksuccino.fancymenu.customization.element.ElementBuilder;
+ import de.keksuccino.fancymenu.customization.layer.ScreenCustomizationLayer;
+ import de.keksuccino.fancymenu.util.enums.LocalizedCycleEnum;
