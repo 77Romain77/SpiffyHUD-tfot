@@ -34,7 +34,7 @@
          this.renderingHudCache_Spiffy = true;
          try {
              this.runLayerTask(() -> this.renderHudLayer_Spiffy(graphics, mouseX, mouseY, partial));
-+            RenderingUtils.executeAndClearDeferredScreenRenderingTasks();
++            RenderingUtils.executeAndClearDeferredScreenRenderingTasks(graphics, mouseX, mouseY, partial);
              graphics.flush();
          } finally {
 @@ -260,7 +268,8 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
