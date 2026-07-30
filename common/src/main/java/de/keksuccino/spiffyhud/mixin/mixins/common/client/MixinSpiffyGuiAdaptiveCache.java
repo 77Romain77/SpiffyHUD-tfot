@@ -99,13 +99,13 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
     private int displayedHudReuses_Spiffy = 0;
 
     @Shadow
-    private abstract boolean shouldRenderCustomizations();
+    protected abstract boolean shouldRenderCustomizations();
 
     @Shadow
-    private abstract void restoreRenderDefaults(GuiGraphics graphics);
+    protected abstract void restoreRenderDefaults(GuiGraphics graphics);
 
     @Shadow
-    private abstract void runLayerTask(Runnable run);
+    protected abstract void runLayerTask(Runnable run);
 
     /**
      * @reason Render the expensive FancyMenu HUD into a transparent texture at an adaptive
@@ -278,7 +278,7 @@ public abstract class MixinSpiffyGuiAdaptiveCache implements AdaptiveHudCacheAcc
         RenderSystem.defaultBlendFunc();
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F, 1.0F);
     }
 
     @Unique
