@@ -40,6 +40,8 @@ jobs:
           patch --batch --forward --strip=1 < tfot-debug-compile-fixes.patch
           patch --batch --forward --strip=1 < tfot-debug-v2.patch
           patch --batch --forward --strip=1 < tfot-debug-v3-title.patch
+          base64 --decode tfot-gnetum-compat.patch.gz.b64 | gzip --decompress > tfot-gnetum-compat.patch
+          patch --batch --forward --strip=1 < tfot-gnetum-compat.patch
 
       - name: Build Forge JAR
         run: |
