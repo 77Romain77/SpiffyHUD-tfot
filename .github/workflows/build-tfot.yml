@@ -44,6 +44,7 @@ jobs:
           patch --batch --forward --strip=1 < tfot-gnetum-compat.patch
           patch --batch --forward --strip=1 < tfot-gnetum-image-fix.patch
           patch --batch --forward --strip=1 < tfot-gnetum-image-scaling-fix.patch
+          patch --batch --forward --strip=1 < tfot-gnetum-chat-order-fix.patch
 
       - name: Build Forge JAR
         run: |
