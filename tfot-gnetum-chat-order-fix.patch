@@ -1,0 +1,15 @@
+--- a/forge/src/main/java/de/keksuccino/spiffyhud/SpiffyHudForgeClient.java
++++ b/forge/src/main/java/de/keksuccino/spiffyhud/SpiffyHudForgeClient.java
+@@ -99,8 +99,8 @@ public final class SpiffyHudForgeClient {
+-        // The original SpiffyHUD draw happens immediately before chat. Placing
+-        // the native overlay immediately after chat keeps almost the same
+-        // ordering and lets normal erasers be released before the HUD draw.
+-        event.registerAbove(
++        // Keep the cached SpiffyHUD below the vanilla chat so Forge and
++        // Gnetum draw chat messages last, above every custom HUD image.
++        // This also matches the original SpiffyHUD rendering order.
++        event.registerBelow(
+                 VanillaGuiOverlay.CHAT_PANEL.id(),
+                 GNETUM_HUD.getPath(),
+                 SpiffyHudForgeClient::renderHud
+         );
