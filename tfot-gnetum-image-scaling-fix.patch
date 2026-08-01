@@ -1,0 +1,18 @@
+--- a/common/src/main/java/de/keksuccino/spiffyhud/mixin/mixins/common/client/MixinImageElement.java
++++ b/common/src/main/java/de/keksuccino/spiffyhud/mixin/mixins/common/client/MixinImageElement.java
+@@ -143,11 +143,13 @@ public abstract class MixinImageElement {
+         graphics.blit(
+                 texture.getResourceLocation(),
+                 image.getAbsoluteX(),
+                 image.getAbsoluteY(),
++                width,
++                height,
+                 0.0F,
+                 0.0F,
+-                width,
+-                height,
++                textureWidth,
++                textureHeight,
+                 textureWidth,
+                 textureHeight
+         );
