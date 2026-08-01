@@ -1,0 +1,28 @@
+--- a/common/src/main/java/de/keksuccino/spiffyhud/mixin/mixins/common/client/MixinImageElement.java
++++ b/common/src/main/java/de/keksuccino/spiffyhud/mixin/mixins/common/client/MixinImageElement.java
+@@ -105,7 +105,7 @@ public abstract class MixinImageElement {
+      */
+     @Inject(
+-            method = {"render", "method_25394"},
++            method = {"render", "method_25394", "m_88315_"},
+             at = @At("HEAD"),
+             cancellable = true,
+             require = 0
+@@ -138,6 +138,7 @@ public abstract class MixinImageElement {
+         int textureHeight = Math.max(1, texture.getHeight());
+ 
+         RenderSystem.enableBlend();
++        RenderSystem.defaultBlendFunc();
+         this.currentImageTint.setAsShaderColor(graphics, Mth.clamp(image.opacity, 0.0F, 1.0F));
+         graphics.blit(
+                 texture.getResourceLocation(),
+--- a/common/src/main/java/de/keksuccino/spiffyhud/customization/SpiffyGui.java
++++ b/common/src/main/java/de/keksuccino/spiffyhud/customization/SpiffyGui.java
+@@ -57,6 +57,7 @@ public class SpiffyGui implements Renderable {
+         RenderingUtils.resetShaderColor(graphics);
+         RenderSystem.enableDepthTest();
+         RenderSystem.enableBlend();
++        RenderSystem.defaultBlendFunc();
+     }
+ 
+     private boolean shouldRenderCustomizations() {
