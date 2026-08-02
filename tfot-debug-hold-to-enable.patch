@@ -1,0 +1,54 @@
+--- a/common/src/main/java/de/keksuccino/spiffyhud/debug/HudDebugOverlay.java
++++ b/common/src/main/java/de/keksuccino/spiffyhud/debug/HudDebugOverlay.java
+@@ -21,10 +21,12 @@
+ public final class HudDebugOverlay {
+ 
+     private static final int SAMPLE_COUNT = 120;
++    private static final long HOLD_TO_ENABLE_NANOS = 5_000_000_000L;
+     private static final double[] RENDER_SAMPLES = new double[SAMPLE_COUNT];
+ 
+     private static boolean enabled = false;
+     private static boolean toggleWasDown = false;
++    private static long holdStartedAtNanos = -1L;
+     private static int renderSampleCount = 0;
+     private static int renderSampleIndex = 0;
+     private static int rendersUntilPercentileUpdate = 0;
+@@ -54,14 +56,32 @@
+                 || isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
+         boolean toggleDown = controlDown && altDown && isKeyDown(window, GLFW.GLFW_KEY_D);
+ 
+-        if (toggleDown && !toggleWasDown) {
+-            enabled = !enabled;
+-            HudElementProfiler.setActive(enabled);
+-            if (enabled) {
+-                resetMeasurements();
++        if (enabled) {
++            if (toggleDown && !toggleWasDown) {
++                enabled = false;
++                HudElementProfiler.setActive(false);
+             }
++            toggleWasDown = toggleDown;
++            return;
++        }
++
++        if (!toggleDown) {
++            holdStartedAtNanos = -1L;
++            toggleWasDown = false;
++            return;
++        }
++
++        long now = System.nanoTime();
++        if (!toggleWasDown) {
++            holdStartedAtNanos = now;
++        } else if (holdStartedAtNanos >= 0L
++                && now - holdStartedAtNanos >= HOLD_TO_ENABLE_NANOS) {
++            enabled = true;
++            HudElementProfiler.setActive(true);
++            resetMeasurements();
++            holdStartedAtNanos = -1L;
+         }
+-        toggleWasDown = toggleDown;
++        toggleWasDown = true;
+     }
+ 
+     public static void recordRender(long elapsedNanos) {
