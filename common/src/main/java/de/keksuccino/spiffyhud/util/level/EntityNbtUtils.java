@@ -1,26 +1,49 @@
 package de.keksuccino.spiffyhud.util.level;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.arguments.NbtPathArgument;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.ByteArrayTag;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntArrayTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.LongArrayTag;
 import net.minecraft.nbt.NumericTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.entity.Entity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 /**
  * Utility class for getting NBT data from entities as strings.
  */
 public class EntityNbtUtils {
+
+    private static final int MAX_CACHED_PATHS = 512;
+
+    /**
+     * Entity keys are weak so changing worlds cannot retain old entities.
+     * Each snapshot and resolved value is valid for one entity tick.
+     */
+    private static final Map<Entity, EntityCache> ENTITY_CACHE = new WeakHashMap<>();
+
+    /**
+     * Parsed NBT paths are immutable and can be reused for every entity/tick.
+     */
+    private static final Map<String, NbtPathArgument.NbtPath> PATH_CACHE = new HashMap<>();
+    private static final Set<String> INVALID_PATH_CACHE = new HashSet<>();
+
+    private EntityNbtUtils() {
+    }
 
     /**
      * Gets NBT data from an entity as a string using the specified path.
@@ -32,49 +55,29 @@ public class EntityNbtUtils {
      */
     @Nullable
     public static String getNbtString(@NotNull Entity entity, @NotNull String path) {
+        EntityCache entityCache = getEntityCache(entity);
+
+        if (entityCache.resolvedValues.containsKey(path)) {
+            return entityCache.resolvedValues.get(path);
+        }
+
+        NbtPathArgument.NbtPath nbtPath = getParsedPath(path);
+        if (nbtPath == null) {
+            entityCache.resolvedValues.put(path, null);
+            return null;
+        }
+
+        String result = null;
         try {
-            // Save entity data to a compound tag
-            CompoundTag entityData = new CompoundTag();
-            entity.saveWithoutId(entityData);
-
-            // Parse the NBT path
-            NbtPathArgument.NbtPath nbtPath = NbtPathArgument.nbtPath().parse(new StringReader(path));
-
-            // Get the data at the path
-            List<Tag> results = nbtPath.get(entityData);
-
-            if (results.isEmpty()) {
-                return null;
+            List<Tag> results = nbtPath.get(entityCache.entityData);
+            if (!results.isEmpty()) {
+                result = tagToString(results.get(0));
             }
+        } catch (CommandSyntaxException ignored) {
+        }
 
-            Tag tag = results.get(0);
-
-            // Special handling for numeric values to remove the type suffix
-            if (tag instanceof NumericTag) {
-                NumericTag numericTag = (NumericTag) tag;
-
-                // Handle different numeric types to remove suffixes like 'd', 'f', etc.
-                if (tag.getAsString().endsWith("d") ||
-                        tag.getAsString().endsWith("f") ||
-                        tag.getAsString().endsWith("b") ||
-                        tag.getAsString().endsWith("s") ||
-                        tag.getAsString().endsWith("L")) {
-
-                    // For float/double, just use the numeric value without suffix
-                    if (tag.getAsString().contains(".")) {
-                        return String.valueOf(numericTag.getAsDouble());
-                    } else {
-                        // For integers, bytes, shorts, longs
-                        return String.valueOf(numericTag.getAsLong());
-                    }
-                }
-            }
-
-            // Default case - return as string
-            return tag.getAsString();
-
-        } catch (CommandSyntaxException ignore) {}
-        return null;
+        entityCache.resolvedValues.put(path, result);
+        return result;
     }
 
     /**
@@ -85,53 +88,92 @@ public class EntityNbtUtils {
      */
     @NotNull
     public static List<String> getAllNbtPaths(@NotNull Entity entity) {
-        // Save entity data to a compound tag
-        CompoundTag entityData = new CompoundTag();
-        entity.saveWithoutId(entityData);
+        CompoundTag entityData = getEntityCache(entity).entityData;
 
-        // Collect all paths
         List<String> paths = new ArrayList<>();
         collectPaths("", entityData, paths);
 
-        // Sort for better readability
         Collections.sort(paths);
         return paths;
+    }
+
+    @NotNull
+    private static EntityCache getEntityCache(@NotNull Entity entity) {
+        EntityCache cache = ENTITY_CACHE.computeIfAbsent(entity, ignored -> new EntityCache());
+        if (cache.entityTick != entity.tickCount) {
+            cache.refresh(entity);
+        }
+        return cache;
+    }
+
+    @Nullable
+    private static NbtPathArgument.NbtPath getParsedPath(@NotNull String path) {
+        NbtPathArgument.NbtPath cached = PATH_CACHE.get(path);
+        if (cached != null) return cached;
+        if (INVALID_PATH_CACHE.contains(path)) return null;
+
+        if (PATH_CACHE.size() + INVALID_PATH_CACHE.size() >= MAX_CACHED_PATHS) {
+            PATH_CACHE.clear();
+            INVALID_PATH_CACHE.clear();
+        }
+
+        try {
+            NbtPathArgument.NbtPath parsed = NbtPathArgument.nbtPath().parse(new StringReader(path));
+            PATH_CACHE.put(path, parsed);
+            return parsed;
+        } catch (CommandSyntaxException ignored) {
+            INVALID_PATH_CACHE.add(path);
+            return null;
+        }
+    }
+
+    @NotNull
+    private static String tagToString(@NotNull Tag tag) {
+        String value = tag.getAsString();
+
+        if (tag instanceof NumericTag numericTag) {
+            if (value.endsWith("d")
+                    || value.endsWith("f")
+                    || value.endsWith("b")
+                    || value.endsWith("s")
+                    || value.endsWith("L")) {
+                if (value.contains(".")) {
+                    return String.valueOf(numericTag.getAsDouble());
+                }
+                return String.valueOf(numericTag.getAsLong());
+            }
+        }
+
+        return value;
     }
 
     /**
      * Recursively collects all paths in an NBT tag.
      */
     private static void collectPaths(String prefix, Tag tag, List<String> paths) {
-        // Add the current path
         if (prefix != null && !prefix.isEmpty()) {
             paths.add(prefix);
         }
-        // Recursively collect paths for compound tags
-        if (tag instanceof CompoundTag) {
-            CompoundTag compound = (CompoundTag) tag;
 
+        if (tag instanceof CompoundTag compound) {
             for (String key : compound.getAllKeys()) {
                 String newPrefix = prefix.isEmpty() ? key : prefix + "." + key;
                 collectPaths(newPrefix, compound.get(key), paths);
             }
-        }
-        // Recursively collect paths for list tags
-        else if (tag instanceof ListTag) {
-            ListTag list = (ListTag) tag;
-
+        } else if (tag instanceof ListTag list) {
             for (int i = 0; i < list.size(); i++) {
                 String newPrefix = prefix + "[" + i + "]";
                 collectPaths(newPrefix, list.get(i), paths);
             }
-        }
-        // Handle array tags
-        else if (tag instanceof ByteArrayTag || tag instanceof IntArrayTag || tag instanceof LongArrayTag) {
-            int size = 0;
-            if (tag instanceof ByteArrayTag) {
-                size = ((ByteArrayTag) tag).getAsByteArray().length;
-            } else if (tag instanceof IntArrayTag) {
-                size = ((IntArrayTag) tag).getAsIntArray().length;
-            } else if (tag instanceof LongArrayTag) {
+        } else if (tag instanceof ByteArrayTag
+                || tag instanceof IntArrayTag
+                || tag instanceof LongArrayTag) {
+            int size;
+            if (tag instanceof ByteArrayTag byteArrayTag) {
+                size = byteArrayTag.getAsByteArray().length;
+            } else if (tag instanceof IntArrayTag intArrayTag) {
+                size = intArrayTag.getAsIntArray().length;
+            } else {
                 size = ((LongArrayTag) tag).getAsLongArray().length;
             }
 
@@ -141,4 +183,18 @@ public class EntityNbtUtils {
         }
     }
 
+    private static final class EntityCache {
+        private int entityTick = Integer.MIN_VALUE;
+        private CompoundTag entityData = new CompoundTag();
+        private final Map<String, String> resolvedValues = new HashMap<>();
+
+        private void refresh(@NotNull Entity entity) {
+            CompoundTag freshData = new CompoundTag();
+            entity.saveWithoutId(freshData);
+
+            this.entityData = freshData;
+            this.entityTick = entity.tickCount;
+            this.resolvedValues.clear();
+        }
+    }
 }
