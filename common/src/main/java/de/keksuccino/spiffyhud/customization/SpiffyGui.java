@@ -8,6 +8,7 @@ import de.keksuccino.fancymenu.customization.layout.editor.LayoutEditorScreen;
 import de.keksuccino.fancymenu.events.screen.*;
 import de.keksuccino.fancymenu.util.event.acara.EventHandler;
 import de.keksuccino.fancymenu.util.rendering.RenderingUtils;
+import de.keksuccino.spiffyhud.util.profiling.SpiffyProfiler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
@@ -25,7 +26,9 @@ public class SpiffyGui implements Renderable {
 
     private static boolean initialized = false;
     private static SpiffyOverlayScreen spiffyOverlayScreen = new SpiffyOverlayScreen(false);
+
     private boolean renderingHudContext = false;
+    private ScreenCustomizationLayer cachedLayer;
 
     private SpiffyGui() {
 
@@ -44,24 +47,26 @@ public class SpiffyGui implements Renderable {
     @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partial) {
 
-        if (!this.shouldRenderCustomizations()) return;
+        long profilerStart = SpiffyProfiler.beginRenderSample();
+        try {
+            if (!this.shouldRenderCustomizations()) return;
 
-        this.runLayerTask(() -> {
+            this.runLayerTask(() -> {
 
-            EventHandler.INSTANCE.postEvent(new ScreenTickEvent.Pre(spiffyOverlayScreen));
-            spiffyOverlayScreen.tick();
-            EventHandler.INSTANCE.postEvent(new ScreenTickEvent.Post(spiffyOverlayScreen));
+                this.restoreRenderDefaults(graphics);
 
-            this.restoreRenderDefaults(graphics);
+                EventHandler.INSTANCE.postEvent(new RenderScreenEvent.Pre(spiffyOverlayScreen, graphics, mouseX, mouseY, partial));
+                spiffyOverlayScreen.render(graphics, mouseX, mouseY, partial);
+                this.restoreRenderDefaults(graphics);
+                EventHandler.INSTANCE.postEvent(new RenderScreenEvent.Post(spiffyOverlayScreen, graphics, mouseX, mouseY, partial));
 
-            EventHandler.INSTANCE.postEvent(new RenderScreenEvent.Pre(spiffyOverlayScreen, graphics, mouseX, mouseY, partial));
-            spiffyOverlayScreen.render(graphics, mouseX, mouseY, partial);
-            this.restoreRenderDefaults(graphics);
-            EventHandler.INSTANCE.postEvent(new RenderScreenEvent.Post(spiffyOverlayScreen, graphics, mouseX, mouseY, partial));
+                this.restoreRenderDefaults(graphics);
 
-            this.restoreRenderDefaults(graphics);
-
-        });
+            });
+        } finally {
+            SpiffyProfiler.endRenderSample(profilerStart);
+            SpiffyProfiler.render(graphics);
+        }
 
     }
 
@@ -76,12 +81,27 @@ public class SpiffyGui implements Renderable {
         return (spiffyOverlayScreen != null) && (this.getLayer() != null);
     }
 
+    private boolean shouldTickCustomizations() {
+        if (Minecraft.getInstance().screen instanceof LayoutEditorScreen) return false;
+        return (spiffyOverlayScreen != null) && (this.getLayer() != null);
+    }
+
     @Nullable
     private ScreenCustomizationLayer getLayer() {
         if (spiffyOverlayScreen == null) return null;
-        ScreenCustomizationLayer l = ScreenCustomizationLayerHandler.getLayerOfScreen(spiffyOverlayScreen);
-        if (l != null) l.loadEarly = true;
-        return l;
+
+        if (this.cachedLayer == null) {
+            this.cachedLayer = ScreenCustomizationLayerHandler.getLayerOfScreen(spiffyOverlayScreen);
+            if (this.cachedLayer != null) {
+                this.cachedLayer.loadEarly = true;
+            }
+        }
+
+        return this.cachedLayer;
+    }
+
+    private void invalidateLayerCache() {
+        this.cachedLayer = null;
     }
 
     @NotNull
@@ -95,25 +115,43 @@ public class SpiffyGui implements Renderable {
 
     public void onResize() {
         try {
+            this.invalidateLayerCache();
             this.initOverlayScreen(true);
+            this.getLayer();
         } catch (Exception ex) {
             LOGGER.error("[SPIFFY HUD] Failed to resize SpiffyGui!", ex);
         }
     }
 
     public void tick() {
+        SpiffyProfiler.tickShortcut();
+        long profilerStart = SpiffyProfiler.beginTickSample();
+
         try {
             if (Shared.reInitHudLayouts) {
                 Shared.reInitHudLayouts = false;
+                this.invalidateLayerCache();
                 this.initOverlayScreen(true);
+                this.getLayer();
+            }
+
+            if (this.shouldTickCustomizations()) {
+                this.runLayerTask(() -> {
+                    EventHandler.INSTANCE.postEvent(new ScreenTickEvent.Pre(spiffyOverlayScreen));
+                    spiffyOverlayScreen.tick();
+                    EventHandler.INSTANCE.postEvent(new ScreenTickEvent.Post(spiffyOverlayScreen));
+                });
             }
         } catch (Exception ex) {
             LOGGER.error("[SPIFFY HUD] Failed to tick SpiffyGui!", ex);
+        } finally {
+            SpiffyProfiler.endTickSample(profilerStart);
         }
     }
 
     private void setNewOverlayScreen() {
         spiffyOverlayScreen = new SpiffyOverlayScreen(false);
+        this.invalidateLayerCache();
         ScreenCustomizationLayerHandler.registerScreen(spiffyOverlayScreen);
         this.getLayer(); //dummy call to let the method set loadEarly to true
     }
@@ -144,23 +182,27 @@ public class SpiffyGui implements Renderable {
     }
 
     private void runLayerTask(@NotNull Runnable run) {
+        boolean customizationEnabled = ScreenCustomization.isScreenCustomizationEnabled();
+        Screen current = Minecraft.getInstance().screen;
+        boolean swappedScreen = false;
+
         try {
-            boolean customizationEnabled = ScreenCustomization.isScreenCustomizationEnabled();
             ScreenCustomization.setScreenCustomizationEnabled(true);
-            Screen current = Minecraft.getInstance().screen;
+
             if (!(current instanceof SpiffyOverlayScreen)) {
                 Minecraft.getInstance().screen = spiffyOverlayScreen;
                 this.renderingHudContext = true;
-                try {
-                    run.run();
-                } finally {
-                    this.renderingHudContext = false;
-                    Minecraft.getInstance().screen = current;
-                }
+                swappedScreen = true;
+                run.run();
             }
-            ScreenCustomization.setScreenCustomizationEnabled(customizationEnabled);
         } catch (Exception ex) {
             LOGGER.error("[SPIFFY HUD] Failed to run layer task!", ex);
+        } finally {
+            if (swappedScreen) {
+                this.renderingHudContext = false;
+                Minecraft.getInstance().screen = current;
+            }
+            ScreenCustomization.setScreenCustomizationEnabled(customizationEnabled);
         }
     }
 
