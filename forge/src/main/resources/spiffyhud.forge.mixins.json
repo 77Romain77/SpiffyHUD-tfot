@@ -8,6 +8,7 @@
     "client.MixinForgeGui",
     "client.MixinGui",
     "client.MixinRenderSystem",
+    "client.MixinSpiffyGuiReplayModCompat",
     "client.MixinVanillaWidgetEditorElement"
   ],
   "injectors": {
